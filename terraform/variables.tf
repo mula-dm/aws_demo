@@ -42,6 +42,6 @@ locals {
   tags = {
     "Project"    = var.name
     "Created_By" = "Terraform"
-    "Notes"      = "Do not edit it manually!"
+    "Notes"      = "Do_not_edit_it_manually"
   }
 }
