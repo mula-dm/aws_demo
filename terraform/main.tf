@@ -14,7 +14,7 @@ module "vpc" {
   private_subnets = var.vpc_private_subnets
   public_subnets  = var.vpc_public_subnets
 
-  # enable_nat_gateway = true
+  enable_nat_gateway = true
   # enable_vpn_gateway = true
 
   tags = local.tags
@@ -56,6 +56,21 @@ resource "aws_route53_zone" "primary" {
   name = join(".", [var.name, "local"])
 }
 
+resource "aws_route53_record" "main" {
+  zone_id = aws_route53_zone.primary.zone_id
+  name    = join(".", ["@", var.name, "local"])
+  type    = "CNAME"
+  ttl     = "300"
+  records = [module.alb.lb_dns_name]
+}
+
+resource "aws_route53_record" "www" {
+  zone_id = aws_route53_zone.primary.zone_id
+  name    = join(".", ["www", var.name, "local"])
+  type    = "CNAME"
+  ttl     = "300"
+  records = [module.alb.lb_dns_name]
+}
 
 # Create self signed ssl cert
 resource "tls_private_key" "tls_key" {
@@ -75,44 +90,69 @@ resource "tls_self_signed_cert" "self_signed_cert" {
   ]
 }
 
-# import self signed ssl to acm
+# Import self signed ssl to acm
 resource "aws_acm_certificate" "acm_cert" {
   private_key      = tls_private_key.tls_key.private_key_pem
   certificate_body = tls_self_signed_cert.self_signed_cert.cert_pem
 }
 
-resource "aws_elb" "elb" {
-  name               = join("-", [var.name, "elb"])
-  availability_zones = var.availability_zones
+# Import ssh key
+resource "aws_key_pair" "ssh_key" {
+  key_name   = var.name
+  public_key = var.ssh_key
+}
 
-  listener {
-    instance_port     = 80
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
-  }
+# Creat ec2 instance for testing
+module "ec2_instance" {
+  source  = "terraform-aws-modules/ec2-instance/aws"
+  version = "~> 3.0"
+  name = var.name
+  ami                    = var.ami
+  instance_type          = "t2.micro"
+  key_name               = var.name
+  monitoring             = false
+  vpc_security_group_ids = [aws_security_group.allow_web.id]
+  subnet_id              = element(module.vpc.private_subnets, 1)
+  tags = local.tags
+}
 
-  listener {
-    instance_port      = 443
-    instance_protocol  = "http"
-    lb_port            = 443
-    lb_protocol        = "https"
-    ssl_certificate_id = aws_acm_certificate.acm_cert.id
-  }
+# Create Load balancer
+module "alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  version = "~> 6.0"
+  name               = join("-", [var.name, "alb"])
+  load_balancer_type = "application"
+  vpc_id             = module.vpc.vpc_id
+  subnets            = module.vpc.public_subnets
+  security_groups    = [aws_security_group.allow_web.id]
+  target_groups = [
+    {
+      backend_protocol = "HTTP"
+      backend_port     = 80
+      target_type      = "instance"
+      targets = [
+        {
+          target_id = module.ec2_instance.id
+          port = 80
+        }
+      ]
+    }
+  ]
 
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    target              = "HTTP:80/"
-    interval            = 30
-  }
-
-  # instances                   = [aws_instance.foo.id]
-  cross_zone_load_balancing   = true
-  idle_timeout                = 400
-  connection_draining         = true
-  connection_draining_timeout = 400
-
+  https_listeners = [
+    {
+      port               = 443
+      protocol           = "HTTPS"
+      certificate_arn    = aws_acm_certificate.acm_cert.id
+      target_group_index = 0
+    }
+  ]
+  http_tcp_listeners = [
+    {
+      port               = 80
+      protocol           = "HTTP"
+      target_group_index = 0
+    }
+  ]
   tags = local.tags
 }

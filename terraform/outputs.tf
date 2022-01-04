@@ -3,6 +3,11 @@ output "vpc_id" {
   description = ""
 }
 
+output "subnet_id" {
+  value       = module.vpc.private_subnets
+  description = ""
+}
+
 output "sg_id" {
   value       = aws_security_group.allow_web.id
   description = ""
@@ -18,4 +23,12 @@ output "acm_arn" {
   description = ""
 }
 
+output "ec2_id" {
+  value       = module.ec2_instance.id
+  description = ""
+}
 
+# output "elb_dns" {
+#   value       = aws_elb.elb.dns_name
+#   description = ""
+# }

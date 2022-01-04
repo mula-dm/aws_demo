@@ -45,3 +45,14 @@ locals {
     "Notes"      = "Do_not_edit_it_manually"
   }
 }
+
+variable "ami" {
+  type    = string
+  default = "ami-0001a0d1a04bfcc30"
+}
+
+variable "ssh_key" {
+  type    = string
+  default = ""
+}
+
