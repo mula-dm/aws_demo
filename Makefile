@@ -8,6 +8,7 @@ usage:
 	@echo "\t\033[92mtf_plan\033[0m - Terraform plan."
 	@echo "\t\033[92mtf_apply\033[0m - Terraform apply."
 	@echo "\t\033[92mtf_destroy\033[0m - Terraform destroy."
+	@echo "\t\033[92mtf_output\033[0m - Terraform output."
 	@echo "\t\033[92mscript_init\033[0m - Build docker image for script."
 	@echo "\t\033[92mlist_all\033[0m - List all resources."
 	@echo "\t\033[92mlist_ec2\033[0m - List ec2 resources."
@@ -55,6 +56,10 @@ tf_apply:
 .PHONY: tf_destroy
 tf_destroy:
 	${TERRAFORM} destroy
+
+.PHONY: tf_output
+tf_output:
+	${TERRAFORM} output
 
 .PHONY: script_init
 script_init:

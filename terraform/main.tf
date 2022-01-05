@@ -53,12 +53,12 @@ resource "aws_security_group" "allow_web" {
 
 # Create route53 zone
 resource "aws_route53_zone" "primary" {
-  name = join(".", [var.name, "local"])
+  name = var.domain
 }
 
 resource "aws_route53_record" "main" {
   zone_id = aws_route53_zone.primary.zone_id
-  name    = join(".", ["@", var.name, "local"])
+  name    = join(".", ["@", var.domain])
   type    = "CNAME"
   ttl     = "300"
   records = [module.alb.lb_dns_name]
@@ -66,7 +66,7 @@ resource "aws_route53_record" "main" {
 
 resource "aws_route53_record" "www" {
   zone_id = aws_route53_zone.primary.zone_id
-  name    = join(".", ["www", var.name, "local"])
+  name    = join(".", ["www", var.domain])
   type    = "CNAME"
   ttl     = "300"
   records = [module.alb.lb_dns_name]
@@ -81,7 +81,7 @@ resource "tls_self_signed_cert" "self_signed_cert" {
   key_algorithm   = "RSA"
   private_key_pem = tls_private_key.tls_key.private_key_pem
   subject {
-    common_name  = join(".", [var.name, "local"])
+    common_name  = var.domain
     organization = var.name
   }
   validity_period_hours = 12

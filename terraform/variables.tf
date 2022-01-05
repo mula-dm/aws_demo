@@ -3,6 +3,12 @@ variable "name" {
   default = "demo"
 }
 
+variable "domain" {
+  type    = string
+  default = "demo.local"
+}
+
+
 variable "region" {
   type    = string
   default = "us-east-1"
