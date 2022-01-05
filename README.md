@@ -104,7 +104,7 @@ NOTES:
 This POC use "demo.local" domain, in a nutshell, local domain
 so for test this we need to edit the local host's file.
 
-For detec current alb ip you can yuse following command
+For detect current alb ip you can use following command:
 ```sh
 aws ec2 describe-network-interfaces --filters Name=description,Values="ELB app/demo-alb/*" --query 'NetworkInterfaces[*].Association.PublicIp' --output text
 ```
